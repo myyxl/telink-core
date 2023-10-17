@@ -5,19 +5,20 @@ use std::sync::{Arc, Mutex};
 use log::info;
 use crate::http::model::request::HttpRequest;
 use crate::http::routes::router;
+use crate::State;
 use crate::thread::pool::ThreadPool;
 
-pub fn start_webserver(host: &str, port: u16, queue: Arc<Mutex<VecDeque<String>>>) {
+pub fn start_webserver(host: &str, port: u16, state: Arc<Mutex<State>>) {
     let mut pool = ThreadPool::new(32);
     let listener = TcpListener::bind(format!("{}:{}", host, port)).unwrap();
 
     info!("Started webserver on {}:{}", host, port);
     for stream in listener.incoming() {
-        let queue = Arc::clone(&queue);
+        let state = Arc::clone(&state);
         let mut stream = stream.unwrap();
         pool.execute(move || {
             let request = parse_request(&mut stream);
-            let response = router::route(request, &mut stream, queue);
+            let response = router::route(request, &mut stream, state);
             if let Some(response) = response {
                 let bytes = &response.build();
                 stream.write_all(bytes).unwrap()

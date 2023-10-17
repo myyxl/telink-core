@@ -8,6 +8,30 @@ pub struct HttpResponse {
 }
 
 impl HttpResponse {
+    pub fn new() -> Self {
+        HttpResponse {
+            status: HttpStatus::Ok,
+            body: String::new(),
+            header: HashMap::new()
+        }
+    }
+
+    pub fn status(mut self, status: HttpStatus) -> Self {
+        self.status = status;
+        self
+    }
+
+    pub fn header(mut self, name: &str, value: &str) -> Self {
+        self.header.insert(String::from(name), String::from(value));
+        self
+    }
+
+    pub fn body(mut self, body: String) -> Self {
+        self.body = body;
+        self
+    }
+
+
     pub fn build(self) -> Box<[u8]> {
         let status_string = self.status.to_string();
         let status_code = self.status as u32;

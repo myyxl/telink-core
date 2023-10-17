@@ -1,21 +1,23 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::io::{BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream};
+use std::sync::{Arc, Mutex};
 use log::info;
 use crate::http::model::request::HttpRequest;
 use crate::http::routes::router;
 use crate::thread::pool::ThreadPool;
 
-pub fn start_webserver(host: &str, port: u16) {
+pub fn start_webserver(host: &str, port: u16, queue: Arc<Mutex<VecDeque<String>>>) {
     let mut pool = ThreadPool::new(32);
     let listener = TcpListener::bind(format!("{}:{}", host, port)).unwrap();
-    info!("Started webserver on {}:{}", host, port);
 
+    info!("Started webserver on {}:{}", host, port);
     for stream in listener.incoming() {
+        let queue = Arc::clone(&queue);
         let mut stream = stream.unwrap();
         pool.execute(move || {
             let request = parse_request(&mut stream);
-            let response = router::route(request, &mut stream);
+            let response = router::route(request, &mut stream, queue);
             if let Some(response) = response {
                 let bytes = &response.build();
                 stream.write_all(bytes).unwrap()

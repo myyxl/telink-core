@@ -10,5 +10,5 @@ fn main() {
     env_logger::init();
     let queue: Arc<Mutex<VecDeque<String>>> = Arc::new(Mutex::new(VecDeque::new()));
     pcap::receiver::start_packet_capture(queue.clone());
-    start_webserver("127.0.0.1", 8000);
+    start_webserver("127.0.0.1", 8000, queue);
 }

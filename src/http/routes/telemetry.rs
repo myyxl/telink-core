@@ -1,25 +1,24 @@
-use std::collections::HashMap;
+use std::collections::VecDeque;
 use std::io::Write;
 use std::net::TcpStream;
-use std::thread;
-use std::time::Duration;
+use std::sync::{Arc, Mutex};
 use crate::http::model::response::HttpResponse;
-use crate::http::model::status::HttpStatus;
 
-pub fn sse(stream: &mut TcpStream) -> Option<HttpResponse> {
-    let eventstream_message = &HttpResponse {
-        status: HttpStatus::Ok,
-        body: String::new(),
-        header: HashMap::from([
-            (String::from("Content-Type"),String::from("text/event-stream")),
-            (String::from("Cache-Control"),String::from("no-cache"))
-        ])
-    }.build();
-    stream.write_all(eventstream_message).unwrap();
+pub fn sse(stream: &mut TcpStream, queue: Arc<Mutex<VecDeque<String>>>) -> Option<HttpResponse> {
+    let eventstream = HttpResponse::new()
+        .header("Content-Type", "text/event-stream")
+        .header("Cache-Control", "no-cache")
+        .build();
+    stream.write_all(&eventstream).unwrap();
 
     loop {
-        stream.write_all("data: UwU\n\n".as_bytes()).unwrap();
-        thread::sleep(Duration::from_millis(100))
+        let next = queue.lock().unwrap().pop_front();
+        if let Some(next) = next {
+            match stream.write_all(format!("data: {}\n\n", next).as_bytes()) {
+                Err(_) => break,
+                _ => ()
+            }
+        }
     }
-
+    None
 }

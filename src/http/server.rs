@@ -1,40 +1,37 @@
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
-use std::net::TcpListener;
+use std::net::{TcpListener, TcpStream};
 use log::info;
 use crate::http::model::request::HttpRequest;
-use crate::http::model::response::HttpResponse;
-use crate::http::model::status::HttpStatus;
-use crate::http::routes::service;
+use crate::http::routes::router;
+use crate::thread::pool::ThreadPool;
 
 pub fn start_webserver(host: &str, port: u16) {
+    let mut pool = ThreadPool::new(32);
     let listener = TcpListener::bind(format!("{}:{}", host, port)).unwrap();
     info!("Started webserver on {}:{}", host, port);
+
     for stream in listener.incoming() {
         let mut stream = stream.unwrap();
-        let raw_request: Vec<String> = BufReader::new(&mut stream)
-            .lines()
-            .map(|result| result.unwrap())
-            .take_while(|line| !line.is_empty())
-            .collect();
-        let request = parse_request(raw_request);
-        info!("{} {}", &request.method, &request.path);
-        let response = match request.path.as_str() {
-            "/service/status" => service::status(),
-            _ => HttpResponse {
-                status: HttpStatus::NotFound,
-                body: String::from("Not found"),
-                header: Default::default()
+        pool.execute(move || {
+            let request = parse_request(&mut stream);
+            let response = router::route(request, &mut stream);
+            if let Some(response) = response {
+                let bytes = &response.build();
+                stream.write_all(bytes).unwrap()
             }
-        };
-
-        let bytes = &build_response(response);
-        stream.write_all(bytes).unwrap()
+        });
     }
 }
 
 
-fn parse_request(raw_request: Vec<String>) -> HttpRequest {
+fn parse_request(stream: &mut TcpStream) -> HttpRequest {
+    let raw_request: Vec<String> = BufReader::new(stream)
+        .lines()
+        .map(|result| result.unwrap())
+        .take_while(|line| !line.is_empty())
+        .collect();
+
     let parts: Vec<&str> = raw_request[0].split(" ").collect();
 
     let mut header: HashMap<String, String> = HashMap::new();
@@ -45,22 +42,10 @@ fn parse_request(raw_request: Vec<String>) -> HttpRequest {
         .for_each(|header_pair: Vec<&str>| {
             header.insert(String::from(header_pair[0]), String::from(header_pair[1]));
         });
+    info!("{} {}", parts[0], parts[1]);
     HttpRequest {
         method: String::from(parts[0]),
         path: String::from(parts[1]),
         header,
     }
-}
-
-fn build_response(response: HttpResponse) -> Box<[u8]> {
-    let status_string = response.status.to_string();
-    let status_code = response.status as u32;
-    Box::from(
-        format!(
-            "HTTP/1.1 {} {}\r\n\r\n{}",
-            status_code,
-            status_string,
-            response.body
-        ).as_bytes()
-    )
 }

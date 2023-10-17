@@ -4,6 +4,7 @@ use crate::http::server::start_webserver;
 
 mod pcap;
 mod http;
+mod thread;
 
 fn main() {
     env_logger::init();

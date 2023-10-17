@@ -20,7 +20,9 @@ pub fn start_webserver(host: &str, port: u16, state: Arc<Mutex<State>>) {
             let request = parse_request(&mut stream);
             let response = router::route(request, &mut stream, state);
             if let Some(response) = response {
-                let bytes = &response.build();
+                let bytes = &response
+                    .header("Access-Control-Allow-Origin", "*")
+                    .build();
                 stream.write_all(bytes).unwrap()
             }
         });

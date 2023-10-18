@@ -21,5 +21,5 @@ fn main() {
         }
     ));
     pcap::receiver::start_packet_capture(state.clone());
-    start_webserver("127.0.0.1", 8000, state);
+    start_webserver("0.0.0.0", 8000, state);
 }

@@ -10,10 +10,8 @@ pub fn route(request: HttpRequest, stream: &mut TcpStream, state: Arc<Mutex<Stat
     match request.path.as_str() {
         "/service/status" => service::status(state),
         "/telemetry" => telemetry::sse(stream, state),
-        _ => Some(HttpResponse {
-            status: HttpStatus::NotFound,
-            body: String::from("Not found"),
-            header: Default::default()
-        })
+        _ => Some(HttpResponse::new()
+            .status(HttpStatus::NotFound)
+            .body("Not found"))
     }
 }

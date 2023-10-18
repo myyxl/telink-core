@@ -26,8 +26,8 @@ impl HttpResponse {
         self
     }
 
-    pub fn body(mut self, body: String) -> Self {
-        self.body = body;
+    pub fn body(mut self, body: &str) -> Self {
+        self.body = body.to_string();
         self
     }
 

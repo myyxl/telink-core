@@ -9,7 +9,7 @@ pub fn start_packet_capture(state: Arc<Mutex<State>>) {
         loop {
             match state.lock() {
                 Ok(mut lock) => {
-                    lock.queue.push_front(String::from("Testing"));
+                    lock.queue.push_back(String::from("Testing"));
                     lock.controller_last_ping = Some(SystemTime::now());
                 }
                 Err(_) => ()

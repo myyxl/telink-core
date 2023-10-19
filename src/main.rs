@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
-use std::time::SystemTime;
+use std::time::Duration;
 use crate::http::server::start_webserver;
 
 mod pcap;
@@ -9,7 +9,7 @@ mod thread;
 
 pub struct State {
     pub queue: VecDeque<String>,
-    pub controller_last_ping: Option<SystemTime>,
+    pub controller_last_ping: Option<Duration>,
 }
 
 fn main() {

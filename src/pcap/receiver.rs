@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::SystemTime;
+use std::time::{SystemTime, UNIX_EPOCH};
 use pcap::{Capture, Linktype};
 
 use crate::State;
@@ -44,7 +44,7 @@ pub fn start_packet_capture(state: Arc<Mutex<State>>) {
             match state.lock() {
                 Ok(mut lock) => {
                     lock.queue.push_back(String::from(message));
-                    lock.controller_last_ping = Some(SystemTime::now());
+                    lock.controller_last_ping = Some(SystemTime::now().duration_since(UNIX_EPOCH).unwrap());
                 }
                 Err(_) => ()
             }

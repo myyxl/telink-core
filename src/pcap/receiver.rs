@@ -48,7 +48,7 @@ pub fn start_packet_capture(state: Arc<Mutex<State>>) {
             // Convert to &str
             let message = String::from_utf8_lossy(data);
             let message = message.trim();
-*/
+
             // Write into queue
             match state.lock() {
                 Ok(mut lock) => {

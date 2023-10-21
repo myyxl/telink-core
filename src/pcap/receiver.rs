@@ -9,8 +9,7 @@ pub fn start_packet_capture(state: Arc<Mutex<State>>) {
     thread::spawn(move || {
         let id = &generate_identifier("telink-core").to_be_bytes()[4..7];
 
-        let device = &state.lock().unwrap().config.monitor_interface;
-        let mut capture = Capture::from_device(device.as_str())
+        let mut capture = Capture::from_device("")
             .unwrap()
             .immediate_mode(true)
             .open()

@@ -10,7 +10,8 @@ use crate::thread::pool::ThreadPool;
 use crate::thread::sse_thread::start_sse_thread;
 
 pub fn start_webserver(state: Arc<Mutex<State>>) {
-    let (host, port) = (&state.lock().unwrap().config.host, state.lock().unwrap().config.port);
+    let config = &state.lock().unwrap().config;
+    let (host, port) = (&config.host, config.port);
     let mut pool = ThreadPool::new(32);
     let listener = TcpListener::bind(format!("{}:{}", host, port)).unwrap();
 

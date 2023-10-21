@@ -6,14 +6,14 @@ use crate::State;
 pub fn status(state: Arc<Mutex<State>>) -> Option<HttpResponse> {
     let current_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
 
-    if let None = state.lock().unwrap().controller_last_ping {
+    if let None = state.lock().unwrap().controller_ping {
         return Some(
             HttpResponse::new()
                 .body("{\"core\": true, \"controller\": false}")
         )
     }
 
-    let controller_time = state.lock().unwrap().controller_last_ping.unwrap().as_millis();
+    let controller_time = state.lock().unwrap().controller_ping.unwrap().as_millis();
     
     let difference = current_time - controller_time;
     let time = Duration::from_millis(difference.try_into().unwrap()).as_secs();

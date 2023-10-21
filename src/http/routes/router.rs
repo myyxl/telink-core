@@ -28,6 +28,6 @@ fn init_sse(stream: Arc<Mutex<TcpStream>>, state: Arc<Mutex<State>>) {
         .header("Access-Control-Allow-Origin", "*")
         .build();
     stream.lock().unwrap().write_all(&eventstream).unwrap();
-    state.lock().unwrap().sse_receiver.push(stream);
-    debug!("Current SSE connections: {}", state.lock().unwrap().sse_receiver.len());
+    state.lock().unwrap().sse_connections.push(stream);
+    debug!("Current SSE connections: {}", state.lock().unwrap().sse_connections.len());
 }

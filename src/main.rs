@@ -1,33 +1,25 @@
-use std::collections::VecDeque;
-use std::net::TcpStream;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
-use crate::config::{Config, load_config};
+use std::sync::mpsc::channel;
+use crate::config::load_config;
 use crate::http::server::start_webserver;
+use crate::pcap::receiver::start_packet_capture_thread;
+use crate::state::State;
+use crate::thread::sse_thread::start_sse_thread;
 
 mod pcap;
 mod http;
 mod thread;
 mod config;
-
-pub struct State {
-    pub queue: VecDeque<String>,
-    pub sse_receiver: Vec<Arc<Mutex<TcpStream>>>,
-    pub controller_last_ping: Option<Duration>,
-    pub config: Config,
-}
+mod state;
 
 fn main() {
     env_logger::init();
+
     let config = load_config("config.toml");
-    let state = Arc::new(Mutex::new(
-        State {
-            queue: VecDeque::new(),
-            sse_receiver: Vec::new(),
-            controller_last_ping: None,
-            config
-        }
-    ));
-    pcap::receiver::start_packet_capture(state.clone());
-    start_webserver(state);
+    let state = Arc::new(Mutex::new(State::default()));
+    let (sender, receiver) = channel();
+
+    start_packet_capture_thread(sender, config.monitor_interface);
+    start_sse_thread(receiver, Arc::clone(&state));
+    start_webserver((config.host, config.port), Arc::clone(&state));
 }

@@ -1,22 +1,11 @@
-use std::sync::{Arc, Mutex};
 use std::{process, thread};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::mpsc::Sender;
 use log::error;
 use pcap::{Capture, Linktype};
 
-use crate::State;
-
-pub fn start_packet_capture(state: Arc<Mutex<State>>) {
+pub fn start_packet_capture_thread(sender: Sender<String>, device: String) {
     thread::spawn(move || {
         let id = &generate_identifier("telink-core").to_be_bytes()[4..7];
-
-        let device = {
-            let lock = state.lock().unwrap_or_else(|error| {
-                error!("{}", error);
-                process::exit(0);
-            });
-            String::from(&lock.config.monitor_interface)
-        };
 
         let mut capture = Capture::from_device(device.as_str())
             .unwrap()
@@ -49,17 +38,11 @@ pub fn start_packet_capture(state: Arc<Mutex<State>>) {
             let message = String::from_utf8_lossy(data);
             let message = message.trim();
 
-            // Write into queue
-            match state.lock() {
-                Ok(mut lock) => {
-                    if lock.sse_receiver.is_empty() {
-                        continue
-                    }
-                    lock.queue.push_back(String::from(message));
-                    lock.controller_last_ping = Some(SystemTime::now().duration_since(UNIX_EPOCH).unwrap());
-                }
-                Err(_) => ()
-            }
+            // Send to other thread
+            sender.send(String::from(message)).unwrap_or_else(|error| {
+                error!("{}", error);
+                process::exit(0);
+            });
         }
     });
 }

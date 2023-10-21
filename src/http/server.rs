@@ -10,32 +10,24 @@ use crate::http::model::request::HttpRequest;
 use crate::http::routes::router;
 use crate::State;
 use crate::thread::pool::ThreadPool;
-use crate::thread::sse_thread::start_sse_thread;
 
-pub fn start_webserver(state: Arc<Mutex<State>>) {
-    let (host, port) = {
-        let lock = state.lock().unwrap_or_else(|error| {
-            error!("{}", error);
-            process::exit(0);
-        });
-        (String::from(&lock.config.host), lock.config.port)
-    };
-
+pub fn start_webserver(host: (String, u16), state: Arc<Mutex<State>>) {
     let mut pool = ThreadPool::new(32);
-    let listener = TcpListener::bind(format!("{}:{}", host, port)).unwrap_or_else(|error| {
+    let listener = TcpListener::bind(format!("{}:{}", host.0, host.1)).unwrap_or_else(|error| {
         error!("{}", error);
         process::exit(0);
     });
-    info!("Started webserver on {}:{}", host, port);
+    info!("Started webserver on {}:{}", host.0, host.1);
 
-    start_sse_thread(state.clone());
     for stream in listener.incoming() {
         let state = Arc::clone(&state);
         let mut stream = stream.unwrap();
         pool.execute(move || {
             let Ok(request) = parse_request(&mut stream) else { return };
+
             let stream = Arc::new(Mutex::new(stream));
-            let response = router::route(request, stream.clone(), state);
+            let response = router::route(request, Arc::clone(&stream), state);
+
             if let Some(response) = response {
                 let bytes = &response
                     .header("Access-Control-Allow-Origin", "*")

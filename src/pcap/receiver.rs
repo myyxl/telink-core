@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 use std::{process, thread};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 use log::error;
 use pcap::{Capture, Linktype};
 
@@ -48,7 +48,7 @@ pub fn start_packet_capture(state: Arc<Mutex<State>>) {
             // Convert to &str
             let message = String::from_utf8_lossy(data);
             let message = message.trim();
-
+*/
             // Write into queue
             match state.lock() {
                 Ok(mut lock) => {

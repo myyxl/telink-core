@@ -9,7 +9,8 @@ use crate::State;
 use crate::thread::pool::ThreadPool;
 use crate::thread::sse_thread::start_sse_thread;
 
-pub fn start_webserver(host: &str, port: u16, state: Arc<Mutex<State>>) {
+pub fn start_webserver(state: Arc<Mutex<State>>) {
+    let (host, port) = (&state.lock().unwrap().config.host, state.lock().unwrap().config.port);
     let mut pool = ThreadPool::new(32);
     let listener = TcpListener::bind(format!("{}:{}", host, port)).unwrap();
 
@@ -20,7 +21,7 @@ pub fn start_webserver(host: &str, port: u16, state: Arc<Mutex<State>>) {
         let mut stream = stream.unwrap();
         pool.execute(move || {
             let request = parse_request(&mut stream);
-            let mut stream = Arc::new(Mutex::new(stream));
+            let stream = Arc::new(Mutex::new(stream));
             let response = router::route(request, stream.clone(), state);
             if let Some(response) = response {
                 let bytes = &response

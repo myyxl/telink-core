@@ -21,7 +21,7 @@ pub fn route(request: HttpRequest, stream: Arc<Mutex<TcpStream>>, state: Arc<Mut
     }
 }
 
-fn init_sse(mut stream: Arc<Mutex<TcpStream>>, state: Arc<Mutex<State>>) {
+fn init_sse(stream: Arc<Mutex<TcpStream>>, state: Arc<Mutex<State>>) {
     let eventstream = HttpResponse::new()
         .header("Content-Type", "text/event-stream")
         .header("Cache-Control", "no-cache")

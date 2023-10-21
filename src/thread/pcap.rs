@@ -3,7 +3,7 @@ use std::sync::mpsc::Sender;
 use log::error;
 use pcap::{Capture, Linktype};
 
-pub fn start_packet_capture_thread(sender: Sender<String>, device: String) {
+pub fn start(sender: Sender<String>, device: String) {
     thread::spawn(move || {
         let id = &generate_identifier("telink-core").to_be_bytes()[4..7];
 

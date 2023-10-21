@@ -6,7 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use log::error;
 use crate::State;
 
-pub fn start_sse_thread(receiver: Receiver<String>, state: Arc<Mutex<State>>) {
+pub fn start(receiver: Receiver<String>, state: Arc<Mutex<State>>) {
     thread::spawn(move || {
         while let Ok(next) = &receiver.recv() {
             let mut state = state.lock().unwrap();

@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
-use std::thread;
+use std::{process, thread};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use log::error;
 use pcap::{Capture, Linktype};
 
 use crate::State;
@@ -9,7 +10,15 @@ pub fn start_packet_capture(state: Arc<Mutex<State>>) {
     thread::spawn(move || {
         let id = &generate_identifier("telink-core").to_be_bytes()[4..7];
 
-        let mut capture = Capture::from_device("")
+        let device = {
+            let lock = state.lock().unwrap_or_else(|error| {
+                error!("{}", error);
+                process::exit(0);
+            });
+            String::from(&lock.config.monitor_interface)
+        };
+
+        let mut capture = Capture::from_device(device.as_str())
             .unwrap()
             .immediate_mode(true)
             .open()
@@ -51,7 +60,6 @@ pub fn start_packet_capture(state: Arc<Mutex<State>>) {
                 }
                 Err(_) => ()
             }
-            thread::sleep(Duration::from_millis(3000));
         }
     });
 }

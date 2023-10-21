@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use pcap::{Capture, Linktype};
 
 use crate::State;
@@ -20,7 +20,7 @@ pub fn start_packet_capture(state: Arc<Mutex<State>>) {
         while let Ok(packet) = capture.next_packet() {
 
             // Check packet type
-            if  (packet.data[56] as usize) != 8 {
+            if (packet.data[56] as usize) != 8 {
                 continue;
             }
 
@@ -34,7 +34,7 @@ pub fn start_packet_capture(state: Arc<Mutex<State>>) {
             let size: [u8; 2] = (&packet.data[80..82]).try_into().unwrap();
             let size: u16 = u16::from_be_bytes(size).into();
             let size: usize = size.into();
-            let data = &packet.data[82 .. 82 + size - 1];
+            let data = &packet.data[82..82 + size - 1];
 
             // Convert to &str
             let message = String::from_utf8_lossy(data);
@@ -43,11 +43,15 @@ pub fn start_packet_capture(state: Arc<Mutex<State>>) {
             // Write into queue
             match state.lock() {
                 Ok(mut lock) => {
+                    if lock.sse_receiver.is_empty() {
+                        continue
+                    }
                     lock.queue.push_back(String::from(message));
                     lock.controller_last_ping = Some(SystemTime::now().duration_since(UNIX_EPOCH).unwrap());
                 }
                 Err(_) => ()
             }
+            thread::sleep(Duration::from_millis(3000));
         }
     });
 }

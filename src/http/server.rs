@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex};
@@ -7,23 +7,26 @@ use crate::http::model::request::HttpRequest;
 use crate::http::routes::router;
 use crate::State;
 use crate::thread::pool::ThreadPool;
+use crate::thread::sse_thread::start_sse_thread;
 
 pub fn start_webserver(host: &str, port: u16, state: Arc<Mutex<State>>) {
     let mut pool = ThreadPool::new(32);
     let listener = TcpListener::bind(format!("{}:{}", host, port)).unwrap();
 
+    start_sse_thread(state.clone());
     info!("Started webserver on {}:{}", host, port);
     for stream in listener.incoming() {
         let state = Arc::clone(&state);
         let mut stream = stream.unwrap();
         pool.execute(move || {
             let request = parse_request(&mut stream);
-            let response = router::route(request, &mut stream, state);
+            let mut stream = Arc::new(Mutex::new(stream));
+            let response = router::route(request, stream.clone(), state);
             if let Some(response) = response {
                 let bytes = &response
                     .header("Access-Control-Allow-Origin", "*")
                     .build();
-                stream.write_all(bytes).unwrap()
+                stream.lock().unwrap().write_all(bytes).unwrap()
             }
         });
     }

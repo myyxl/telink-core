@@ -1,3 +1,4 @@
+use std::ops::Sub;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH, Duration};
 use serde::Serialize;
@@ -15,10 +16,9 @@ pub fn status(state: Arc<Mutex<State>>) -> Option<HttpResponse> {
     let mut status = ServiceStatus { core: true, controller: false };
 
     if let Some(controller_time) = controller_time {
-        let current_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
-        let difference = current_time - controller_time.as_millis();
-        let time = Duration::from_millis(difference.try_into().unwrap()).as_secs();
-        status.controller = time < 5;
+        let current_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+        let difference = current_time.sub(controller_time).as_secs();
+        status.controller = difference < 5;
     }
 
     Some(HttpResponse::new().body(serde_json::to_string(&status).unwrap().as_str()))

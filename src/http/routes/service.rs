@@ -1,36 +1,25 @@
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH, Duration};
+use serde::Serialize;
 use crate::http::model::response::HttpResponse;
 use crate::State;
 
+#[derive(Serialize)]
+struct ServiceStatus {
+    core: bool,
+    controller: bool,
+}
+
 pub fn status(state: Arc<Mutex<State>>) -> Option<HttpResponse> {
-    let current_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
+    let controller_time = { state.lock().unwrap().controller_ping };
+    let mut status = ServiceStatus { core: true, controller: false };
 
-    if let None = state.lock().unwrap().controller_ping {
-        return Some(
-            HttpResponse::new()
-                .body("{\"core\": true, \"controller\": false}")
-        )
+    if let Some(controller_time) = controller_time {
+        let current_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
+        let difference = current_time - controller_time.as_millis();
+        let time = Duration::from_millis(difference.try_into().unwrap()).as_secs();
+        status.controller = time < 5;
     }
 
-    let controller_time = state.lock().unwrap().controller_ping.unwrap().as_millis();
-    
-    let difference = current_time - controller_time;
-    let time = Duration::from_millis(difference.try_into().unwrap()).as_secs();
-
-    if time > 5 {
-        Some(
-            HttpResponse::new()
-                .body("{\"core\": true, \"controller\": false}")
-        )
-    } else {
-        Some(
-            HttpResponse::new()
-                .body("{\"core\": true, \"controller\": true}")
-        )
-    }
-
-    
-
-    
+    Some(HttpResponse::new().body(serde_json::to_string(&status).unwrap().as_str()))
 }

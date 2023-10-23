@@ -2,6 +2,15 @@ use std::{process, thread};
 use std::sync::mpsc::Sender;
 use log::error;
 use pcap::{Capture, Linktype};
+use serde::Serialize;
+
+#[derive(Serialize)]
+struct Telemetry {
+    altitute: String,
+    velocity: String,
+    acceleration: String,
+    temperature: String
+}
 
 pub fn start(sender: Sender<String>, device: String) {
     thread::spawn(move || {
@@ -32,14 +41,24 @@ pub fn start(sender: Sender<String>, device: String) {
             let size: [u8; 2] = (&packet.data[80..82]).try_into().unwrap();
             let size: u16 = u16::from_be_bytes(size).into();
             let size: usize = size.into();
-            let data = &packet.data[82..82 + size - 1];
+            let data = &packet.data[82..82 + size];
 
-            // Convert to &str
-            let message = String::from_utf8_lossy(data);
-            let message = message.trim();
+            let altitute = f64::from_le_bytes(data[0..8].try_into().unwrap());
+            let velocity = f64::from_le_bytes(data[8..16].try_into().unwrap());
+            let acceleration = f64::from_le_bytes(data[16..24].try_into().unwrap());
+            let temperature = f64::from_le_bytes(data[24..32].try_into().unwrap());
 
+            let telemetry = Telemetry {
+                altitute: format!("{:.2}", altitute).to_string(),
+                velocity: format!("{:.2}", velocity).to_string(),
+                acceleration: format!("{:.2}", acceleration).to_string(),
+                temperature: format!("{:.2}", temperature).to_string(),
+            };
+
+            let data_string = serde_json::to_string(&telemetry).unwrap();
+            
             // Send to other thread
-            sender.send(String::from(message)).unwrap_or_else(|error| {
+            sender.send(data_string).unwrap_or_else(|error| {
                 error!("{}", error);
                 process::exit(0);
             });

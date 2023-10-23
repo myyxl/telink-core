@@ -43,10 +43,10 @@ pub fn start(sender: Sender<String>, device: String) {
             let size: usize = size.into();
             let data = &packet.data[82..82 + size];
 
-            let altitude = f64::from_le_bytes(data[0..8].try_into().unwrap());
-            let velocity = f64::from_le_bytes(data[8..16].try_into().unwrap());
-            let acceleration = f64::from_le_bytes(data[16..24].try_into().unwrap());
-            let temperature = f64::from_le_bytes(data[24..32].try_into().unwrap());
+            let altitude = f32::from_le_bytes(data[0..4].try_into().unwrap());
+            let velocity = f32::from_le_bytes(data[4..8].try_into().unwrap());
+            let acceleration = f32::from_le_bytes(data[8..12].try_into().unwrap());
+            let temperature = f32::from_le_bytes(data[12..16].try_into().unwrap());
 
             let telemetry = Telemetry {
                 altitute: format!("{:.2}", altitude).to_string(),

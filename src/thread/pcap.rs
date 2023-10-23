@@ -49,10 +49,10 @@ pub fn start(sender: Sender<String>, device: String) {
             let temperature = f32::from_le_bytes(data[12..16].try_into().unwrap());
 
             let telemetry = Telemetry {
-                altitute: format!("{:.2}", altitude).to_string(),
-                velocity: format!("{:.2}", velocity).to_string(),
-                acceleration: format!("{:.2}", acceleration).to_string(),
-                temperature: format!("{:.2}", temperature).to_string(),
+                altitute: format!("{:.1}", altitude).to_string(),
+                velocity: format!("{:.1}", velocity).to_string(),
+                acceleration: format!("{:.1}", acceleration).to_string(),
+                temperature: format!("{:.1}", temperature).to_string(),
             };
 
             let data_string = serde_json::to_string(&telemetry).unwrap();

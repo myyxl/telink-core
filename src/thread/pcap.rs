@@ -6,7 +6,7 @@ use serde::Serialize;
 
 #[derive(Serialize)]
 struct Telemetry {
-    altitute: String,
+    altitude: String,
     velocity: String,
     acceleration: String,
     temperature: String
@@ -49,7 +49,7 @@ pub fn start(sender: Sender<String>, device: String) {
             let temperature = f32::from_le_bytes(data[12..16].try_into().unwrap());
 
             let telemetry = Telemetry {
-                altitute: format!("{:.1}", altitude).to_string(),
+                altitude: format!("{:.1}", altitude).to_string(),
                 velocity: format!("{:.1}", velocity).to_string(),
                 acceleration: format!("{:.1}", acceleration).to_string(),
                 temperature: format!("{:.1}", temperature).to_string(),
